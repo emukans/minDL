@@ -29,12 +29,10 @@ class NeuronConnection:
 
 
 class NeuralNetwork:
-    def __init__(self):
+    def __init__(self, activation_function: Callable, loss_function: Callable):
         self.layer_list = []
-        self.activation = None
-
-    def set_activation(self, f: Callable):
-        self.activation = f
+        self.activation = activation_function
+        self.compute_loss = loss_function
 
     def stack(self, neuron_list: List[Neuron], weight_list: List[float] = None):
         self.layer_list.append(neuron_list)
@@ -64,12 +62,17 @@ class NeuralNetwork:
 
         return calculated_values
 
+    def backprop(self, loss: float):
+        pass
 
-nn = NeuralNetwork()
+
+nn = NeuralNetwork(
+    activation_function=step,
+    loss_function=lambda x: sum(x) / len(x)
+)
+
 nn.stack([Neuron(0), Neuron(0)])
 nn.stack([Neuron(-1.6), Neuron(-0.3)], [1, 1, 1, 1])
 nn.stack([Neuron(-0.4)], [-2, 1])
-
-nn.set_activation(step)
 
 print(nn.forward([0, 0]))
