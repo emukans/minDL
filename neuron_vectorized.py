@@ -3,8 +3,14 @@ from typing import Iterable, Union, Sized
 import numpy as np
 
 
+np.random.seed(3)
+
+
 def relu(x):
     return np.maximum(x, 0)
+    # x = np.where(x >= 0, 1, x)
+    # x = np.where(x < 0, 0, x)
+    # return x
 
 
 def relu_derivative(x):
@@ -14,43 +20,58 @@ def relu_derivative(x):
     return x
 
 
+def compute_loss(y: np.array, pred: np.array):
+    return np.mean((y - pred) ** 2)
+#    return ((pred - y)**2).sum() / (2*pred.size)
+
+
 class NeuronNetwork:
     def __init__(self, shape: Union[Iterable[int], Sized]):
         self.layer_length = len(shape)
-        self.B = [np.random.randn(layer, 1) for layer in shape[1:]]
-        self.W = [np.random.randn(current_layer, next_layer) for current_layer, next_layer in zip(shape[:-1], shape[1:])]
 
-        self.z_list = []
-        self.a_list = []
+        self.bias_list = [np.random.uniform(-1, 1, (1, layer)) for layer in shape[1:]]
+        # self.bias_list = [np.zeros((1, layer)) for layer in shape[1:]]
+        self.weight_list = [np.random.uniform(-1, 1, (current_layer, next_layer)) for current_layer, next_layer in zip(shape[:-1], shape[1:])]
+
+        self.calculated_values = []
 
     def forward(self, X):
-        self.z_list = []
-        self.a_list = []
-        for weight, bias in zip(self.W, self.B):
-            if len(self.a_list):
-                Z = np.dot(self.a_list[-1], weight) + bias
-            else:
-                Z = np.dot(X, weight) + bias
+        self.calculated_values = [X]
+        for weight, bias in zip(self.weight_list, self.bias_list):
+            value = np.dot(relu(self.calculated_values[-1]), weight) + bias  # if first, then not need relu
 
-            self.z_list.append(Z)
-            A = relu(Z)
-            self.a_list.append(A)
+            self.calculated_values.append(value)
 
-        return self.a_list[-1]
+        return relu(value)
 
     def backprop(self, y):
-        e_list = []
-        for A, Z in reversed(zip(self.a_list, self.z_list)):
-            if len(e_list):
-                E = A - y
-            # else:
-            #     np.dot(dW1, W2.T)
-            # dW1 = E * A * (1 - A)
-            #
-            # E2 = np.dot(dW1, W2.T)
-            # dW2 = E2 * A1 * (1 - A1)
+        learning_rate = 0.01
+        error = (relu(self.calculated_values[-1]) - y) * 2
+        for i, value in enumerate(reversed(self.calculated_values[:-1]), 1):
+            error_update = np.dot(error, self.weight_list[-i].T) * relu_derivative(value)
+            self.weight_list[-i] -= np.dot(relu(value.T), error) * learning_rate
+            self.bias_list[-i] -= np.sum(error, axis=0, keepdims=True) * learning_rate
+            error = error_update
+
+    def fit(self, X, y, iteration_count):
+        for i in range(iteration_count):
+            pred = self.forward(X)
+
+            loss = compute_loss(y, pred)
+
+            self.backprop(y)
+
+            if i % 1000 == 0:
+                print(f'Loss: {loss}')
 
 
 nn = NeuronNetwork([2, 2, 1])
-print(len(nn.B))
-print(len(nn.W))
+
+X = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
+y = np.array([[0], [1], [1], [0]])
+
+print(f'Ground-truth: {y.squeeze(1)}, Predicted: {[round(a[0]) for a in nn.forward(X)]}')
+nn.fit(X, y, 10000)
+
+print(f'Ground-truth: {y.squeeze(1)}, Predicted: {[round(a[0]) for a in nn.forward(X)]}')
+
