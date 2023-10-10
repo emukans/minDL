@@ -13,6 +13,10 @@ def relu_derivative(x):
     return 1 if x > 0 else 0
 
 
+def compute_loss(y: float, pred: float):
+    return ((pred - y) ** 2) / 2
+
+
 class Neuron:
     def __init__(self, bias: Optional[float] = None):
         self.bias = bias if bias is not None else uniform(-1, 1)
@@ -129,9 +133,6 @@ if __name__ == "__main__":
     nn.stack([Neuron(0), Neuron(0)])
     nn.stack([Neuron(), Neuron()])
     nn.stack([Neuron()])
-
-    def compute_loss(y: float, pred: float):
-        return ((pred - y) ** 2) / 2
 
     data = [((0, 0), 0), ((1, 0), 1), ((0, 1), 1), ((1, 1), 0)]
 
