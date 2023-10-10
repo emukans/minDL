@@ -1,4 +1,3 @@
-import math
 from random import uniform, seed
 from typing import Callable, List, Optional
 
@@ -7,16 +6,11 @@ seed(5)
 
 
 def relu(x):
-    # return 1 if x >= 0 else 0
     return max(x, 0)
-    # return 1/(1 + math.exp(-x))
 
 
 def relu_derivative(x):
-    # return 1 if x == 0 else 0
-    # return max(x, 0)
     return 1 if x > 0 else 0
-    # return relu(x) * (1 - relu(x))
 
 
 class Neuron:
@@ -27,7 +21,9 @@ class Neuron:
 
     def __call__(self, state_list: List[float]):
         result = 0
-        for connection, state in zip(self.connection_list, state_list):  # type: (NeuronConnection, float)
+        for connection, state in zip(
+            self.connection_list, state_list
+        ):  # type: (NeuronConnection, float)
             result += connection.weight * state
 
         self.value = result + self.bias
@@ -45,7 +41,12 @@ class NeuronConnection:
 
 
 class NeuralNetwork:
-    def __init__(self, activation_function: Callable, activation_function_derivative: Callable, learning_rate: float):
+    def __init__(
+        self,
+        activation_function: Callable,
+        activation_function_derivative: Callable,
+        learning_rate: float,
+    ):
         self.layer_list = []
         self.activation = activation_function
         self.activation_derivative = activation_function_derivative
@@ -65,14 +66,16 @@ class NeuralNetwork:
 
     def forward(self, inputs):
         if not len(self.layer_list):
-            raise Exception('Network is empty')
+            raise Exception("Network is empty")
 
         if len(inputs) != len(self.layer_list[0]):
-            raise Exception('Input shape do not match')
+            raise Exception("Input shape do not match")
 
         calculated_values = inputs
         for layer in self.layer_list[1:]:
-            calculated_values = [self.activation(neuron(calculated_values)) for neuron in layer]
+            calculated_values = [
+                self.activation(neuron(calculated_values)) for neuron in layer
+            ]
 
         return calculated_values[0]
 
@@ -82,10 +85,22 @@ class NeuralNetwork:
             updated_error_list = []
             for neuron, prediction_error in zip(layer, error_list):
                 for connection in neuron.connection_list:
-                    delta = prediction_error * connection.weight * self.activation_derivative(connection.neuron.value)
+                    # Calculate error for the next layer
+                    delta = (
+                        prediction_error
+                        * connection.weight
+                        * self.activation_derivative(connection.neuron.value)
+                    )
                     updated_error_list.append(delta)
-                    connection.weight -= self.learning_rate * prediction_error * self.activation(connection.neuron.value)
 
+                    # Weight update
+                    connection.weight -= (
+                        self.learning_rate
+                        * prediction_error
+                        * self.activation(connection.neuron.value)
+                    )
+
+                # Bias update
                 neuron.bias -= self.learning_rate * prediction_error
                 error_list = updated_error_list
 
@@ -101,34 +116,26 @@ class NeuralNetwork:
                 self.backprop(y)
 
             if i % 1000 == 0:
-                print(f'Loss: {total_loss}')
+                print(f"Loss: {total_loss}")
 
 
-nn = NeuralNetwork(
-    activation_function=relu,
-    activation_function_derivative=relu_derivative,
-    learning_rate=0.01
-)
+if __name__ == "__main__":
+    nn = NeuralNetwork(
+        activation_function=relu,
+        activation_function_derivative=relu_derivative,
+        learning_rate=0.01,
+    )
 
-# nn.stack([Neuron(0), Neuron(0)])
-# nn.stack([Neuron(-1.6), Neuron(-0.3)], [1, 1, 1, 1])
-# nn.stack([Neuron(-0.4)], [-2, 1])
+    nn.stack([Neuron(0), Neuron(0)])
+    nn.stack([Neuron(), Neuron()])
+    nn.stack([Neuron()])
 
-nn.stack([Neuron(0), Neuron(0)])
-nn.stack([Neuron(), Neuron()])
-nn.stack([Neuron()])
+    def compute_loss(y: float, pred: float):
+        return ((pred - y) ** 2) / 2
 
+    data = [((0, 0), 0), ((1, 0), 1), ((0, 1), 1), ((1, 1), 0)]
 
-def compute_loss(y: float, pred: float):
-    return ((pred - y) ** 2) / 2
+    nn.fit(data, 10000)
 
-
-data = [((0, 0), 0),
-     ((1, 0), 1),
-     ((0, 1), 1),
-     ((1, 1), 0)]
-
-nn.fit(data, 10000)
-
-for X, y in data:
-    print(f'Ground-truth: {y}, Predicted: {nn.forward(X)}')
+    for X, y in data:
+        print(f"Ground-truth: {y}, Predicted: {nn.forward(X)}")
