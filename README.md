@@ -1,4 +1,6 @@
 # minDL
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Minimalistic set of tools for Deep Learning.
 
 **!NB, this repository is for educational purposes and is not intended for production use.
