@@ -1,42 +1,22 @@
-from typing import Iterable, Union, Sized, Callable
+from typing import Union, Iterable, Sized
 
 import numpy as np
 
-
-np.random.seed(3)
-
-
-def relu(x):
-    return np.maximum(x, 0)
+from mindl.function import Function
 
 
-def relu_derivative(x):
-    x = np.where(x > 0, 1, x)
-    x = np.where(x < 0, 0, x)
-
-    return x
-
-
-def compute_loss(y: np.array, pred: np.array):
-    return (y - pred) ** 2
-
-
-def loss_derivative(y: np.array, pred: np.array):
-    return 2 * (pred - y)
-
-
-class NeuronNetwork:
+class NeuralNetwork:
     def __init__(
         self,
         shape: Union[Iterable[int], Sized],
         learning_rate: float,
-        activation: Callable,
-        activation_derivative: Callable,
+        activation: Function,
+        loss: Function,
     ):
         self.layer_length = len(shape)
         self.learning_rate = learning_rate
         self.activation = activation
-        self.activation_derivative = activation_derivative
+        self.loss = loss
 
         self.bias_list = [np.random.uniform(-1, 1, (1, layer)) for layer in shape[1:]]
         self.weight_list = [
@@ -61,14 +41,14 @@ class NeuronNetwork:
         return self.activation(self.calculated_values[-1])
 
     def backprop(self, y):
-        error_list = [loss_derivative(y, self.activation(self.calculated_values[-1]))]
+        error_list = [self.loss.derivative(y, self.activation(self.calculated_values[-1]))]
         for i, value in enumerate(reversed(self.calculated_values[:-1]), 1):
             error = error_list[-1]
 
             # Calculate error for the next layer
             error_list.append(
                 np.dot(error, self.weight_list[-i].T)
-                * self.activation_derivative(value)
+                * self.activation.derivative(value)
             )
 
             # Weight update
@@ -84,30 +64,9 @@ class NeuronNetwork:
         for i in range(iteration_count):
             pred = self.forward(X)
 
-            loss = np.mean(compute_loss(y, pred))
+            loss = np.mean(self.loss(y, pred))
 
             self.backprop(y)
 
             if i % 1000 == 0:
                 print(f"Loss: {loss}")
-
-
-if __name__ == "__main__":
-    nn = NeuronNetwork(
-        [2, 2, 1],
-        learning_rate=0.01,
-        activation=relu,
-        activation_derivative=relu_derivative,
-    )
-
-    X = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
-    y = np.array([[0], [1], [1], [0]])
-
-    print(
-        f"Ground-truth: {y.squeeze(1)}, Predicted: {[round(a[0]) for a in nn.forward(X)]}"
-    )
-    nn.fit(X, y, 10000)
-
-    print(
-        f"Ground-truth: {y.squeeze(1)}, Predicted: {[round(a[0]) for a in nn.forward(X)]}"
-    )
