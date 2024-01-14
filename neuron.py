@@ -14,12 +14,12 @@ def relu_derivative(x):
 
 
 def compute_loss(y: float, pred: float):
-    return ((pred - y) ** 2) / 2
+    return (pred - y) ** 2
 
 
 class Neuron:
     def __init__(self, bias: Optional[float] = None):
-        self.bias = bias if bias is not None else uniform(-1, 1)
+        self.bias = bias if bias is not None else uniform(0, 1)
         self.value = 0
         self.connection_list = []
 
@@ -41,7 +41,7 @@ class Neuron:
 class NeuronConnection:
     def __init__(self, neuron: Neuron, weight: Optional[float] = None):
         self.neuron = neuron
-        self.weight = weight if weight else uniform(-1, 1)
+        self.weight = weight if weight else uniform(0, 1)
 
 
 class NeuralNetwork:
@@ -84,7 +84,7 @@ class NeuralNetwork:
         return calculated_values[0]
 
     def backprop(self, y):
-        error_list = [(self.activation(self.layer_list[-1][0].value) - y)]
+        error_list = [compute_loss(y, self.activation(self.layer_list[-1][0].value))]
         for layer in reversed(self.layer_list[1:]):
             updated_error_list = []
             for neuron, prediction_error in zip(layer, error_list):

@@ -18,7 +18,11 @@ def relu_derivative(x):
 
 
 def compute_loss(y: np.array, pred: np.array):
-    return np.mean((y - pred) ** 2)
+    return (y - pred) ** 2
+
+
+def loss_derivative(y: np.array, pred: np.array):
+    return 2 * (pred - y)
 
 
 class NeuronNetwork:
@@ -44,17 +48,20 @@ class NeuronNetwork:
 
     def forward(self, X):
         self.calculated_values = [X]
+        is_first = True
         for weight, bias in zip(self.weight_list, self.bias_list):
-            # !NB, using other activation functions could lead to corrupted input.
-            # In this case, need to skip activating input neurons and pass the value as is.
-            value = np.dot(self.activation(self.calculated_values[-1]), weight) + bias
+            if is_first:
+                value = np.dot(self.calculated_values[-1], weight) + bias
+                is_first = False
+            else:
+                value = np.dot(self.activation(self.calculated_values[-1]), weight) + bias
 
             self.calculated_values.append(value)
 
         return self.activation(self.calculated_values[-1])
 
     def backprop(self, y):
-        error_list = [(self.activation(self.calculated_values[-1]) - y) * 2]
+        error_list = [loss_derivative(y, self.activation(self.calculated_values[-1]))]
         for i, value in enumerate(reversed(self.calculated_values[:-1]), 1):
             error = error_list[-1]
 
@@ -77,7 +84,7 @@ class NeuronNetwork:
         for i in range(iteration_count):
             pred = self.forward(X)
 
-            loss = compute_loss(y, pred)
+            loss = np.mean(compute_loss(y, pred))
 
             self.backprop(y)
 
