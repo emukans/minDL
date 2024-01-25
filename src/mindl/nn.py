@@ -12,11 +12,13 @@ class NeuralNetwork:
         learning_rate: float,
         activation: Function,
         loss: Function,
+        log_frequency: int = 1000
     ):
         self.layer_length = len(shape)
         self.learning_rate = learning_rate
         self.activation = activation
         self.loss = loss
+        self.log_frequency = log_frequency
 
         self.bias_list = [np.random.uniform(-1, 1, (1, layer)) for layer in shape[1:]]
         self.weight_list = [
@@ -68,5 +70,5 @@ class NeuralNetwork:
 
             self.backprop(y)
 
-            if i % 1000 == 0:
+            if i % self.log_frequency == 0:
                 print(f"Loss: {loss}")
