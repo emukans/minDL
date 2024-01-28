@@ -6,6 +6,17 @@ from mindl.function import Function
 
 
 class NeuralNetwork:
+    """
+    The class represents the neural network for approximating functions.
+
+    Usually the neural network implementation and training code is separated.
+    In this realisation everything is merged into a single class for simplicity.
+
+    An example of neural network (nn.Modules) representation in PyTorch (https://pytorch.org/docs/stable/notes/modules.html)
+    Training algorithm realisation for machine learning (https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier.fit)
+    and for deep learning an example could be Trainer from PyTorch Lightning (https://lightning.ai/docs/pytorch/stable/common/trainer.html#)
+    """
+
     def __init__(
         self,
         shape: Union[Iterable[int], Sized],
@@ -28,7 +39,14 @@ class NeuralNetwork:
 
         self.calculated_values = []
 
-    def forward(self, X):
+    def forward(self, X: np.array):
+        """
+        Feedforward the input through the neural network.
+
+        :param X:
+
+        :return:
+        """
         self.calculated_values = [X]
         is_first = True
         for weight, bias in zip(self.weight_list, self.bias_list):
@@ -42,7 +60,14 @@ class NeuralNetwork:
 
         return self.activation(self.calculated_values[-1])
 
-    def backprop(self, y):
+    def backprop(self, y: np.array):
+        """
+        Implementation of the backpropagation algorithm.
+
+        :param np.array y: dataset output
+
+        :return:
+        """
         error_list = [self.loss.derivative(y, self.activation(self.calculated_values[-1]))]
         for i, value in enumerate(reversed(self.calculated_values[:-1]), 1):
             error = error_list[-1]
@@ -62,7 +87,17 @@ class NeuralNetwork:
                 np.sum(error, axis=0, keepdims=True) * self.learning_rate
             )
 
-    def fit(self, X, y, iteration_count):
+    def fit(self, X: np.array, y: np.array, iteration_count: int):
+        """
+        A method for training the neural network. Usually this method is implemented separately from the model.
+        See examples in the class docstring above.
+
+        :param np.array X: dataset input
+        :param np.array y: dataset output
+        :param int iteration_count: iteration count in the training loop
+
+        :return:
+        """
         for i in range(iteration_count):
             pred = self.forward(X)
 

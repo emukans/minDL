@@ -1,8 +1,5 @@
-from random import uniform, seed
-from typing import Callable, List, Optional
-
-
-seed(5)
+from random import uniform
+from typing import Callable, List, Optional, Union, Iterable, Sized, Tuple
 
 
 def relu(x):
@@ -15,6 +12,10 @@ def relu_derivative(x):
 
 def compute_loss(y: float, pred: float):
     return (pred - y) ** 2
+
+
+def compute_loss_derivative(y: float, pred: float) -> float:
+    return 2 * (pred - y)
 
 
 class Neuron:
@@ -47,16 +48,26 @@ class NeuronConnection:
 class NeuralNetwork:
     def __init__(
         self,
-        activation_function: Callable,
-        activation_function_derivative: Callable,
-        learning_rate: float,
+        shape: Union[Iterable[int], Sized],
+        activation_function: Callable = relu,
+        activation_function_derivative: Callable = relu_derivative,
+        learning_rate: float = 0.01,
     ):
         self.layer_list = []
         self.activation = activation_function
         self.activation_derivative = activation_function_derivative
         self.learning_rate = learning_rate
 
-    def stack(self, neuron_list: List[Neuron], weight_list: List[float] = None):
+        is_first = True
+        for neuron_count in shape:
+            neuron_value = None
+            if is_first:
+                neuron_value = 0
+                is_first = False
+
+            self._stack([Neuron(neuron_value) for _ in range(neuron_count)])
+
+    def _stack(self, neuron_list: List[Neuron], weight_list: List[float] = None):
         self.layer_list.append(neuron_list)
 
         if len(self.layer_list) > 1:
@@ -84,7 +95,7 @@ class NeuralNetwork:
         return calculated_values[0]
 
     def backprop(self, y):
-        error_list = [compute_loss(y, self.activation(self.layer_list[-1][0].value))]
+        error_list = [compute_loss_derivative(y, self.activation(self.layer_list[-1][0].value))]
         for layer in reversed(self.layer_list[1:]):
             updated_error_list = []
             for neuron, prediction_error in zip(layer, error_list):
@@ -108,35 +119,16 @@ class NeuralNetwork:
                 neuron.bias -= self.learning_rate * prediction_error
                 error_list = updated_error_list
 
-    def fit(self, data, iteration_count):
+    def fit(self, X: List[Tuple], y: List[int], iteration_count: int):
         for i in range(iteration_count):
             total_loss = 0
-            for X, y in data:
-                pred = self.forward(X)
+            for x_, y_ in zip(X, y):
+                pred = self.forward(x_)
 
-                loss = compute_loss(y, pred)
+                loss = compute_loss(y_, pred)
                 total_loss += loss
 
-                self.backprop(y)
+                self.backprop(y_)
 
             if i % 1000 == 0:
                 print(f"Loss: {total_loss}")
-
-
-if __name__ == "__main__":
-    nn = NeuralNetwork(
-        activation_function=relu,
-        activation_function_derivative=relu_derivative,
-        learning_rate=0.01,
-    )
-
-    nn.stack([Neuron(0), Neuron(0)])
-    nn.stack([Neuron(), Neuron()])
-    nn.stack([Neuron()])
-
-    data = [((0, 0), 0), ((1, 0), 1), ((0, 1), 1), ((1, 1), 0)]
-
-    nn.fit(data, 10000)
-
-    for X, y in data:
-        print(f"Ground-truth: {y}, Predicted: {nn.forward(X)}")
