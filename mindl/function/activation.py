@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 import numpy as np
 
 from mindl.function import Function
@@ -19,3 +21,17 @@ class Sigmoid(Function):
 
     def derivative(self, x: np.array):
         return self(x) * (1 - self(x))
+
+
+class Activation(StrEnum):
+    ReLU = 'ReLU'
+    Sigmoid = 'Sigmoid'
+
+    def map_activation(self) -> Function:
+        match self.value.lower():
+            case 'relu':
+                return ReLU()
+            case 'sigmoid':
+                return Sigmoid()
+
+        raise ValueError('Unknown activation')

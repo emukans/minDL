@@ -1,6 +1,8 @@
 # Project-specific
 media/
 .idea/
+model/
+!model/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

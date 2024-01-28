@@ -1,8 +1,11 @@
-from typing import Union, Iterable, Sized
+import json
+from typing import Union, Iterable, Sized, Self
 
 import numpy as np
 
 from mindl.function import Function
+from mindl.function.activation import Activation
+from mindl.function.loss import Loss
 
 
 class NeuralNetwork:
@@ -25,6 +28,7 @@ class NeuralNetwork:
         loss: Function,
         log_frequency: int = 1000
     ):
+        self._shape = shape
         self.layer_length = len(shape)
         self.learning_rate = learning_rate
         self.activation = activation
@@ -107,3 +111,31 @@ class NeuralNetwork:
 
             if i % self.log_frequency == 0:
                 print(f"Loss: {loss}")
+
+    def save(self, filepath):
+        with open(filepath, 'w') as f:
+            nn_structure = {
+                'shape': self._shape,
+                'learning_rate': self.learning_rate,
+                'weight_list': [w.tolist() for w in self.weight_list],
+                'bias_list': [b.tolist() for b in self.bias_list],
+                'activation': self.activation.__class__.__name__,
+                'loss': self.loss.__class__.__name__
+            }
+            json.dump(nn_structure, f)
+
+    @classmethod
+    def restore_from_file(cls, filepath) -> Self:
+        with open(filepath, 'r') as f:
+            nn_structure = json.load(f)
+
+        instance = cls(
+            shape=nn_structure['shape'],
+            learning_rate=nn_structure['learning_rate'],
+            activation=Activation(nn_structure['activation']).map_activation(),
+            loss=Loss(nn_structure['loss']).map_loss(),
+        )
+        instance.weight_list = [np.array(w) for w in nn_structure['weight_list']]
+        instance.bias_list = [np.array(b) for b in nn_structure['bias_list']]
+
+        return instance
