@@ -35,11 +35,13 @@ class NeuralNetwork:
         self.loss = loss
         self.log_frequency = log_frequency
 
-        self.bias_list = [np.random.uniform(-1, 1, (1, layer)) for layer in shape[1:]]
+        self.bias_list = [np.random.uniform(-1, 1, layer) for layer in shape[1:]]
         self.weight_list = [
             np.random.uniform(-1, 1, (current_layer, next_layer))
             for current_layer, next_layer in zip(shape[:-1], shape[1:])
         ]
+
+        self.snapshot_list = []
 
         self.calculated_values = []
 
@@ -88,7 +90,7 @@ class NeuralNetwork:
             )
             # Bias update
             self.bias_list[-i] -= (
-                np.sum(error, axis=0, keepdims=True) * self.learning_rate
+                np.sum(error, axis=0) * self.learning_rate
             )
 
     def fit(self, X: np.array, y: np.array, iteration_count: int):
@@ -110,6 +112,10 @@ class NeuralNetwork:
             self.backprop(y)
 
             if i % self.log_frequency == 0:
+                self.snapshot_list.append({
+                    'weight_list': [w.tolist() for w in self.weight_list],
+                    'bias_list': [b.tolist() for b in self.bias_list]
+                })
                 print(f"Loss: {loss}")
 
     def save(self, filepath):
@@ -120,7 +126,8 @@ class NeuralNetwork:
                 'weight_list': [w.tolist() for w in self.weight_list],
                 'bias_list': [b.tolist() for b in self.bias_list],
                 'activation': self.activation.__class__.__name__,
-                'loss': self.loss.__class__.__name__
+                'loss': self.loss.__class__.__name__,
+                'snapshot_list': self.snapshot_list
             }
             json.dump(nn_structure, f)
 

@@ -42,11 +42,11 @@ class Neuron(VMobject):
     def draw_connection_to(
         self, object: Self, label=None, label_placement=RIGHT
     ):
-        line = Line(self.neuron.get_right(), object.neuron.get_left())
+        line = Line(self.neuron.get_right(), object.neuron.get_left(), z_index=-1)
         self.connection_line_group.add(line)
         group = VGroup(line)
         if label:
-            label_unit = DecimalNumber(number=label.get_value(), font_size=DEFAULT_FONT_SIZE * self.size, color=WHITE)
+            label_unit = DecimalNumber(number=label.get_value(), font_size=DEFAULT_FONT_SIZE * self.size, color=YELLOW, z_index=100)
             label_unit.add_updater(lambda m: m.set_value(label.get_value()).next_to(line.get_center(), direction=label_placement, buff=0.5))
             label_unit.next_to(line.get_center(), direction=label_placement, buff=0.5)
             group.add(label_unit)
@@ -87,19 +87,20 @@ class TrainingScene(Scene):
 
     def construct(self):
         prev_layer = None
-        all_w = []
-        all_b = []
         all_layer_list = []
+        layer_iterator = 0
+        b_layer_list = []
         for neuron_count in self.model_parameters['shape']:
-            w_layer_list = []
-            b_layer_list = []
             neuron_layer = []
-            for _ in range(neuron_count):
+            for i in range(neuron_count):
                 value = None
                 if prev_layer is not None:
-                    pass
+                    value = ValueTracker(self.model_parameters['bias_list'][layer_iterator][i])
+                    b_layer_list.append(value)
                 neuron_layer.append(Neuron(value=value))
 
+            if prev_layer is not None:
+                layer_iterator += 1
             current_layer = NeuralLayer(*neuron_layer)
             current_layer.arrange(DOWN * 18)
             all_layer_list.append(current_layer)
@@ -109,11 +110,17 @@ class TrainingScene(Scene):
         nn = VGroup(*all_layer_list)
         nn.arrange(RIGHT * 18)
 
-        for prev_layer, current_layer in zip(nn[:-1], nn[1:]):
-            for neuron_from in prev_layer:
-                for neuron_to in current_layer:
+        w_layer_list = []
+
+        for l, (prev_layer, current_layer) in enumerate(zip(nn[:-1], nn[1:])):
+            for n, neuron_from in enumerate(prev_layer):
+                for i, neuron_to in enumerate(current_layer):
+                    value = ValueTracker(self.model_parameters['weight_list'][l][n][i])
+                    w_layer_list.append(value)
                     neuron_from.draw_connection_to(
-                        neuron_to
+                        neuron_to,
+                        label=value,
+                        label_placement=UP * 0.8 if i % 2 else DOWN * 0.8,
                     )
 
         self.add(nn)
