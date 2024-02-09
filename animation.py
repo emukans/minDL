@@ -102,13 +102,14 @@ class TrainingScene(Scene):
             if prev_layer is not None:
                 layer_iterator += 1
             current_layer = NeuralLayer(*neuron_layer)
-            current_layer.arrange(DOWN * 18)
+            current_layer.arrange(DOWN * 15)
             all_layer_list.append(current_layer)
 
             prev_layer = current_layer
 
         nn = VGroup(*all_layer_list)
-        nn.arrange(RIGHT * 18)
+        nn.arrange(RIGHT * 15)
+        nn.shift(LEFT * 1.5)
 
         w_layer_list = []
 
@@ -123,7 +124,19 @@ class TrainingScene(Scene):
                         label_placement=UP * 0.8 if i % 2 else DOWN * 0.8,
                     )
 
-        self.add(nn)
+        table_values_def = [
+            ["1", "1", "0"],
+            ["1", "0", "1"],
+            ["0", "1", "1"],
+            ["0", "0", "0"],
+        ]
+        table_def = Table(
+            table_values_def, col_labels=[Tex("$X$"), Tex("$pred$"), Tex("$y$")]
+        )
+        table_def.scale(0.4)
+        table_def.shift(RIGHT * 5.5 + DOWN * 2)
+
+        self.add(nn, table_def)
 
 
 if __name__ == '__main__':

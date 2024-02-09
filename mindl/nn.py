@@ -114,7 +114,11 @@ class NeuralNetwork:
             if i % self.log_frequency == 0:
                 self.snapshot_list.append({
                     'weight_list': [w.tolist() for w in self.weight_list],
-                    'bias_list': [b.tolist() for b in self.bias_list]
+                    'bias_list': [b.tolist() for b in self.bias_list],
+                    'loss': loss,
+                    'input': X.astype('int').tolist(),
+                    'target': y.astype('int').tolist(),
+                    'prediction': pred.astype('float').tolist()
                 })
                 print(f"Loss: {loss}")
 
