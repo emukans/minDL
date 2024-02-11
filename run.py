@@ -27,6 +27,7 @@ nn = NeuralNetwork(
     learning_rate=0.01,
     activation=ReLU(),
     loss=MSE(),
+    log_frequency=50
 )
 
 # Define input-output structure
@@ -37,7 +38,7 @@ print('Before:')
 print_output_and_target_comparison(nn, X, y)
 
 # Training the model
-nn.fit(X, y, 10000)
+nn.fit(X, y, 800)
 
 print('After:')
 print_output_and_target_comparison(nn, X, y)

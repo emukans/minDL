@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 
 from typing import Self
 
@@ -79,11 +80,13 @@ class NeuralLayer(VGroup):
 
 
 class TrainingScene(Scene):
-    def __init__(self, saved_model: str, *args, **kwargs):
+    def __init__(self, saved_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         with open(saved_model, 'r') as f:
             self.model_parameters = json.load(f)
+
+        self.model_name = os.path.splitext(os.path.basename(saved_model))[0].replace('_', ' ').upper()
 
     def construct(self):
         prev_layer = None
@@ -102,14 +105,14 @@ class TrainingScene(Scene):
             if prev_layer is not None:
                 layer_iterator += 1
             current_layer = NeuralLayer(*neuron_layer)
-            current_layer.arrange(DOWN * 15)
+            current_layer.arrange(DOWN * 15)  # todo: adjust me if you're changing the NN size
             all_layer_list.append(current_layer)
 
             prev_layer = current_layer
 
         nn = VGroup(*all_layer_list)
-        nn.arrange(RIGHT * 15)
-        nn.shift(LEFT * 1.5)
+        nn.arrange(RIGHT * 13)  # todo: adjust me if you're changing the NN size
+        nn.shift(LEFT * 2 + DOWN * 0.5)  # todo: adjust me if you're changing the NN size
 
         w_layer_list = []
 
@@ -124,19 +127,94 @@ class TrainingScene(Scene):
                         label_placement=UP * 0.8 if i % 2 else DOWN * 0.8,
                     )
 
-        table_values_def = [
-            ["1", "1", "0"],
-            ["1", "0", "1"],
-            ["0", "1", "1"],
-            ["0", "0", "0"],
-        ]
-        table_def = Table(
-            table_values_def, col_labels=[Tex("$X$"), Tex("$pred$"), Tex("$y$")]
+        table_values_def = []
+        input_len = len(self.model_parameters['snapshot_list'][0]['input'][0])
+        pred_len = len(self.model_parameters['snapshot_list'][0]['prediction'][0])
+        target_len = len(self.model_parameters['snapshot_list'][0]['target'][0])
+        prediction_list = []
+        for i in range(len(self.model_parameters['snapshot_list'][0]['input'])):
+            snapshot = self.model_parameters['snapshot_list'][0]
+            table_line = []
+            for k in range(input_len):
+                table_line.append(snapshot['input'][i][k])
+
+            for k in range(pred_len):
+                table_line.append(snapshot['prediction'][i][k])
+
+            for k in range(target_len):
+                table_line.append(snapshot['target'][i][k])
+            table_values_def.append(table_line)
+
+        column_labels = []
+        for k in range(input_len):
+            column_labels.append(Tex(f"$x_{k}$"))
+
+        for k in range(pred_len):
+            column_labels.append(Tex(f"$pred_{k}$"))
+
+        for k in range(target_len):
+            column_labels.append(Tex(f"$y_{k}$"))
+
+        table_def = DecimalTable(
+            table_values_def, col_labels=column_labels
         )
         table_def.scale(0.4)
-        table_def.shift(RIGHT * 5.5 + DOWN * 2)
+        table_def.move_to(RIGHT * 5 + DOWN * 2.5)
 
-        self.add(nn, table_def)
+        ax_contour = Axes(
+            x_range=[0, len(self.model_parameters['snapshot_list'])],
+            y_range=[0, 1.2],
+            x_length=3,
+            y_length=2,
+            axis_config={"include_tip": False},
+        ).move_to(RIGHT * 5 + UP * 0.5)
+        labels = ax_contour.get_axis_labels(
+            Tex("step").scale(0.5), Text("loss").scale(0.4)
+        )
+
+        title = Text(self.model_name, font_size=DEFAULT_FONT_SIZE)
+        title.move_to(UP * 3.5)
+        iteration_text = Text("Iteration: ", font_size=DEFAULT_FONT_SIZE / 2)
+        iteration_text.move_to(UP * 2.5 + RIGHT * 5)
+        iteration_variable = DecimalNumber(0, num_decimal_places=0, font_size=DEFAULT_FONT_SIZE * 0.75)
+        iteration_variable.move_to(iteration_text.get_right() + RIGHT * 0.3)
+
+        # todo: if you're adjusting the NN size, then uncomment self.add and comment everything below (this is to speedup the process)
+        # self.add(title, nn, table_def, ax_contour, labels, iteration_variable, iteration_text)
+        self.play(Write(title))
+        self.play(FadeIn(nn))
+        self.play(FadeIn(table_def, ax_contour), Write(labels), Write(iteration_text), Write(iteration_variable))
+        prev_point = None
+
+        for iteration, snapshot in enumerate(self.model_parameters['snapshot_list'][:2]):
+            animation_list = []
+            bias_iterator = 0
+            for bias_list in snapshot['bias_list']:
+                for bias_value in bias_list:
+                    animation_list.append(b_layer_list[bias_iterator].animate.set_value(bias_value))
+                    bias_iterator += 1
+
+            weight_iterator = 0
+            for weight_list in snapshot['weight_list']:
+                for weight_layer in weight_list:
+                    for weight_value in weight_layer:
+                        animation_list.append(w_layer_list[weight_iterator].animate.set_value(weight_value))
+                        weight_iterator += 1
+
+            loss_point = Dot(ax_contour.c2p(iteration, snapshot['loss']), radius=DEFAULT_DOT_RADIUS / 2)
+            fade_in_objects = [loss_point]
+            if prev_point:
+                fade_in_objects.append(Line(prev_point, loss_point, path_arc=0.5))
+
+            prev_point = loss_point
+
+            header_count = len(snapshot['input'][0]) + len(snapshot['target'][0]) + len(snapshot['prediction'][0])
+            for i, prediction_list in enumerate(snapshot['prediction']):
+                for k, prediction in enumerate(prediction_list):
+                    animation_list.append(table_def[0][header_count * (i + 1) + len(snapshot['input'][0]) + k].animate.set_value(prediction))
+
+            self.play(*animation_list, iteration_variable.animate.set_value(iteration + 1), FadeIn(*fade_in_objects))
+            self.wait()
 
 
 if __name__ == '__main__':
