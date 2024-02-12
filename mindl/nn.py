@@ -125,6 +125,7 @@ class NeuralNetwork:
     def save(self, filepath):
         with open(filepath, 'w') as f:
             nn_structure = {
+                'state': (np.random.get_state()[0], np.random.get_state()[1].tolist(), *np.random.get_state()[2:]),
                 'shape': self._shape,
                 'learning_rate': self.learning_rate,
                 'weight_list': [w.tolist() for w in self.weight_list],

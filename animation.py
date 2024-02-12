@@ -130,8 +130,6 @@ class TrainingScene(Scene):
         table_values_def = []
         input_len = len(self.model_parameters['snapshot_list'][0]['input'][0])
         pred_len = len(self.model_parameters['snapshot_list'][0]['prediction'][0])
-        target_len = len(self.model_parameters['snapshot_list'][0]['target'][0])
-        prediction_list = []
         for i in range(len(self.model_parameters['snapshot_list'][0]['input'])):
             snapshot = self.model_parameters['snapshot_list'][0]
             table_line = []
@@ -141,8 +139,6 @@ class TrainingScene(Scene):
             for k in range(pred_len):
                 table_line.append(snapshot['prediction'][i][k])
 
-            for k in range(target_len):
-                table_line.append(snapshot['target'][i][k])
             table_values_def.append(table_line)
 
         column_labels = []
@@ -152,14 +148,11 @@ class TrainingScene(Scene):
         for k in range(pred_len):
             column_labels.append(Tex(f"$pred_{k}$"))
 
-        for k in range(target_len):
-            column_labels.append(Tex(f"$y_{k}$"))
-
         table_def = DecimalTable(
             table_values_def, col_labels=column_labels
         )
-        table_def.scale(0.4)
-        table_def.move_to(RIGHT * 5 + DOWN * 2.5)
+        table_def.scale(0.4)  # todo: adjust me if you're changing the input-output
+        table_def.move_to(RIGHT * 5 + DOWN * 2.5)  # todo: adjust me if you're changing the NN size
 
         ax_contour = Axes(
             x_range=[0, len(self.model_parameters['snapshot_list'])],
@@ -167,7 +160,7 @@ class TrainingScene(Scene):
             x_length=3,
             y_length=2,
             axis_config={"include_tip": False},
-        ).move_to(RIGHT * 5 + UP * 0.5)
+        ).move_to(RIGHT * 5 + UP * 1)
         labels = ax_contour.get_axis_labels(
             Tex("step").scale(0.5), Text("loss").scale(0.4)
         )
@@ -186,7 +179,7 @@ class TrainingScene(Scene):
         self.play(FadeIn(table_def, ax_contour), Write(labels), Write(iteration_text), Write(iteration_variable))
         prev_point = None
 
-        for iteration, snapshot in enumerate(self.model_parameters['snapshot_list'][:2]):
+        for iteration, snapshot in enumerate(self.model_parameters['snapshot_list']):
             animation_list = []
             bias_iterator = 0
             for bias_list in snapshot['bias_list']:
@@ -208,7 +201,7 @@ class TrainingScene(Scene):
 
             prev_point = loss_point
 
-            header_count = len(snapshot['input'][0]) + len(snapshot['target'][0]) + len(snapshot['prediction'][0])
+            header_count = len(snapshot['input'][0]) + len(snapshot['prediction'][0])
             for i, prediction_list in enumerate(snapshot['prediction']):
                 for k, prediction in enumerate(prediction_list):
                     animation_list.append(table_def[0][header_count * (i + 1) + len(snapshot['input'][0]) + k].animate.set_value(prediction))
